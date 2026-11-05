@@ -89,6 +89,12 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
 .chip.absent{background:transparent;color:var(--muted);border:1px dashed var(--line);text-decoration:line-through}
 .chip small{font-size:.75rem;opacity:.85;font-weight:400}
 .sub{font:700 .8rem var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.chip.sel{outline:3px solid var(--ink);outline-offset:2px}
+.swapbox{border:2px solid var(--bib);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.swapbox .q{font:700 1.15rem var(--display);text-transform:uppercase;letter-spacing:.04em}
+.swapbox .acts{display:flex;gap:8px;flex-wrap:wrap}
+.swapbox .acts button{font:700 .9rem var(--body);padding:10px 14px;border-radius:8px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--ink)}
+.swapbox .acts .out{color:var(--warn);border-color:var(--warn)}
 .flash{animation:flash 1s ease 3}
 @keyframes flash{50%{background:var(--bib);color:var(--bib-ink)}}
 @media (prefers-reduced-motion:reduce){.flash{animation:none}}
@@ -123,7 +129,8 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
       <p class="sub">Bench</p>
       <div class="chips" id="benchNow"></div>
       <div id="absentWrap" hidden><p class="sub">Unavailable</p><div class="chips" id="absentNow"></div></div>
-      <p class="hint">Tap a player if they get injured or have to leave. The rest of the game re-balances around them. Tap again to bring them back.</p>
+      <div class="swapbox" id="swapbox" hidden></div>
+      <p class="hint" id="swapHint">Tap a bench player to bring them on, then pick who comes off. The rest of the game re-balances around the change.</p>
     </div>
   </section>
 
@@ -200,7 +207,7 @@ function curBlock(){
 
 /* Greedy balancer: each shift, fixed keeper first, then whoever has played least.
    Ties go to kids who sat out the previous shift, then roster order. */
-function replan(from){
+function replan(from, keepCurrent = true){
   const n = nB(), P = S.names.length;
   let plan = (S.plan && S.plan.length===n) ? S.plan.slice(0,from) : [];
   if(plan.length < from){ plan = []; from = 0 }
@@ -213,7 +220,7 @@ function replan(from){
     const lineup = [];
     const gk = S.gk[half];
     if(gk>=0 && gk<P && S.present[gk]) lineup.push(gk);
-    if(b===from && started() && S.plan && S.plan[b]){
+    if(b===from && keepCurrent && started() && S.plan && S.plan[b]){
       S.plan[b].forEach(i => { if(i<P && S.present[i] && !lineup.includes(i) && lineup.length<need) lineup.push(i) });
     }
     const prev = b>0 ? plan[b-1] : [];
@@ -291,16 +298,34 @@ function renderMatch(){
   else if(L.phase==='h1'||L.phase==='h2') c = L.running ? `<button class="btn alt" data-a="pause">Pause</button>` : `<button class="btn" data-a="resume">Resume</button>`;
   else if(L.phase==='ht') c = `<button class="btn" data-a="h2">Start 2nd half</button>`;
   if(L.phase!=='pre') c += `<button class="btn danger" data-a="reset">${resetArmed?'Tap again to reset':'Reset'}</button>`;
-  const ctrls = document.getElementById('ctrls'); if(ctrls.innerHTML !== c) ctrls.innerHTML = c;
+  setHTML('ctrls', c);
 
   const lineup = S.plan[cb] || [];
   const half = cb < S.bph ? 0 : 1;
-  document.getElementById('onNow').innerHTML = lineup.map(i=>chip(i, S.gk[half]===i?'gk':'on', S.gk[half]===i?' <small>GK</small>':'')).join('');
+  const sl = i => sel===i ? ' sel' : '';
+  setHTML('onNow', lineup.map(i=>chip(i, (S.gk[half]===i?'gk':'on')+sl(i), S.gk[half]===i?' <small>GK</small>':''))
+  .join(''));
   const present = S.names.map((_,i)=>i).filter(i=>S.present[i]);
-  document.getElementById('benchNow').innerHTML = present.filter(i=>!lineup.includes(i)).map(i=>chip(i,'bench')).join('') || '<span class="hint">Nobody</span>';
+  const bench = present.filter(i=>!lineup.includes(i));
+  setHTML('benchNow', bench.map(i=>chip(i,'bench'+sl(i))).join('') || '<span class="hint">Nobody</span>');
+
+  // swap prompt
+  const box = document.getElementById('swapbox');
+  if(sel===null || !S.present[sel]){ sel = null; box.hidden = true; setHTML('swapbox','') }
+  else {
+    const onField = lineup.includes(sel);
+    const others = onField ? bench : lineup;
+    const q = onField ? `Take ${esc(nm(sel))} off for…` : `Bring ${esc(nm(sel))} on for…`;
+    const html = `<div class="q">${q}</div>
+      <div class="chips">${others.map(i=>`<button class="chip ${onField?'bench':(S.gk[half]===i?'gk':'on')}" data-swap="${i}">${esc(nm(i))}</button>`).join('') || '<span class="hint">Nobody available</span>'}</div>
+      <div class="acts"><button data-x="cancel">Cancel</button><button class="out" data-x="out">${esc(nm(sel))} can't play on</button></div>`;
+    setHTML('swapbox', html);
+    box.hidden = false;
+  }
+  document.getElementById('swapHint').hidden = sel!==null;
   const absent = S.names.map((_,i)=>i).filter(i=>!S.present[i]);
   document.getElementById('absentWrap').hidden = !absent.length;
-  document.getElementById('absentNow').innerHTML = absent.map(i=>chip(i,'absent')).join('');
+  setHTML('absentNow', absent.map(i=>chip(i,'absent')).join(''));
 
   // next change
   let nxt = '';
@@ -324,7 +349,7 @@ function renderMatch(){
       else nxt += off.length ? `<div class="swap"><span class="k off">Off</span><span>${off.map(i=>esc(nm(i))).join(', ')}</span><span class="k in">On</span><span>${inn.map(i=>esc(nm(i))).join(', ')}</span></div>` : `<div class="hint">No change.</div>`;
     }
   }
-  const nx = document.getElementById('next'); if(nx.innerHTML!==nxt) nx.innerHTML = nxt;
+  setHTML('next', nxt);
 }
 
 function render(){
@@ -333,6 +358,8 @@ function render(){
   if(tab==='plan') renderPlan();
   if(tab==='match') renderMatch();
 }
+const _h={};
+function setHTML(id,h){ if(_h[id]===h) return; _h[id]=h; document.getElementById(id).innerHTML=h }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
 
 /* ---------- clock ---------- */
@@ -396,10 +423,31 @@ function togglePresent(i){
   S.present[i] = !S.present[i];
   replan(started()?curBlock():0);
 }
-['onNow','benchNow','absentNow'].forEach(id=>document.getElementById(id).addEventListener('click', e=>{
+let sel = null;
+['onNow','benchNow'].forEach(id=>document.getElementById(id).addEventListener('click', e=>{
+  const b = e.target.closest('[data-t]'); if(!b) return;
+  const i = +b.dataset.t;
+  sel = sel===i ? null : i; renderMatch();
+}));
+document.getElementById('absentNow').addEventListener('click', e=>{
   const b = e.target.closest('[data-t]'); if(!b) return;
   togglePresent(+b.dataset.t); renderMatch();
-}));
+});
+document.getElementById('swapbox').addEventListener('click', e=>{
+  const x = e.target.closest('[data-x]')?.dataset.x;
+  const s = e.target.closest('[data-swap]');
+  if(x==='cancel'){ sel = null }
+  else if(x==='out'){ const i = sel; sel = null; togglePresent(i) }
+  else if(s){
+    const other = +s.dataset.swap, cb = curBlock(), lineup = S.plan[cb].slice();
+    const offP = lineup.includes(sel) ? sel : other, onP = offP===sel ? other : sel;
+    lineup[lineup.indexOf(offP)] = onP;
+    S.plan[cb] = lineup;
+    sel = null;
+    replan(cb+1, false);
+  }
+  renderMatch();
+});
 
 document.getElementById('ctrls').addEventListener('click', e=>{
   const a = e.target.closest('[data-a]')?.dataset.a; if(!a) return;
