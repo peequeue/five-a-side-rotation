@@ -73,6 +73,11 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px soli
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{position:relative;font:700 1rem var(--body);border-radius:999px;padding:10px 14px;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:baseline}
 .chip small{font-weight:400;font-size:.78rem;color:var(--muted)}
+.tm{font:600 .85rem var(--display);letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.tm:empty{display:none}
+.tok .b{display:inline-flex;align-items:baseline;justify-content:center;gap:6px}
+.tok .tm{opacity:.85}
+.chip .tm{font-size:.9rem}
 .chip.sel{outline:3px solid var(--ink);outline-offset:2px}
 .picking .chip:not(.sel):not(.absent){border-color:var(--bib)}
 .chip.absent{background:transparent;color:var(--muted);border-style:dashed;text-decoration:line-through}
@@ -211,6 +216,7 @@ const nm = i => SQUAD[i];
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const started = () => S.live.phase !== 'pre';
 const live = () => S.live.phase==='h1' || S.live.phase==='h2';
+const fmtPlay = s => { s=Math.floor(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0') };
 function setHTML(id,h){ if(_h[id]===h) return; _h[id]=h; document.getElementById(id).innerHTML=h }
 
 function elapsed(){ const L=S.live, h=L.phase==='h2'?1:0; return L.el[h] + (L.running ? (Date.now()-L.t0)/1000 : 0) }
@@ -331,7 +337,7 @@ function render(){
     const i=slots[k], isGk=k===0;
     if(i==null) return `<button class="tok empty${isGk?' gk':''}" style="left:${p.x}%;top:${p.y}%" disabled><span class="pos">${p.k}</span><span class="b">Empty</span></button>`;
     const tag = offNext.includes(i) ? '<span class="tag">OFF</span>' : '';
-    return `<button class="tok${isGk?' gk':''}${sel===i?' sel':''}" style="left:${p.x}%;top:${p.y}%" data-t="${i}"><span class="pos">${p.k}</span><span class="b">${esc(nm(i))}${tag}</span></button>`;
+    return `<button class="tok${isGk?' gk':''}${sel===i?' sel':''}" style="left:${p.x}%;top:${p.y}%" data-t="${i}"><span class="pos">${p.k}</span><span class="b">${esc(nm(i))}<small class="tm" data-tm="${i}"></small>${tag}</span></button>`;
   }).join(''));
 
   // bench
@@ -339,9 +345,8 @@ function render(){
   const bench = present.filter(i=>!onSet.includes(i));
   document.querySelector('.bench').classList.toggle('picking', sel!==null);
   setHTML('benchNow', bench.map(i=>{
-    const m = started() ? `<small>${Math.floor(playedSecs(i)/60)}'</small>` : '';
     const tag = onNext.includes(i) ? '<span class="tag">NEXT</span>' : '';
-    return `<button class="chip${sel===i?' sel':''}" data-t="${i}">${esc(nm(i))}${m}${tag}</button>`;
+    return `<button class="chip${sel===i?' sel':''}" data-t="${i}">${esc(nm(i))}<small class="tm" data-tm="${i}"></small>${tag}</button>`;
   }).join('') || '<span class="hint">Nobody on the bench</span>');
   const absent = SQUAD.map((_,i)=>i).filter(i=>!S.present[i]);
   document.getElementById('absentWrap').hidden = !absent.length;
@@ -356,6 +361,11 @@ function render(){
   }
   document.getElementById('help').hidden = sel!==null || L.phase==='ft';
 
+  // play clocks update in place so taps never land on a rebuilt button
+  document.querySelectorAll('[data-tm]').forEach(el=>{
+    const v = started() ? fmtPlay(playedSecs(+el.dataset.tm)) : '';
+    if(el.textContent!==v) el.textContent=v;
+  });
   renderPlan(cb);
 }
 
