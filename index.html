@@ -167,12 +167,13 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
 </div>
 
 <script>
-const HALF = 25*60, ON = 5, KEY = 'fas-rotation-v1';
+const HALF = 25*60, ON = 5, KEY = 'fas-rotation-v2';
+const SQUAD = ['Alex','Ari','Atlas','Carter','Casper','Elliot','Henry','Raph'];
 let S = load() || fresh();
 let tab = 'plan', tickId = null, lastBlock = null, ac = null, wake = null, resetArmed = false;
 
 function fresh(){
-  return {names:Array.from({length:8},(_,i)=>'Player '+(i+1)), present:Array(8).fill(true),
+  return {names:SQUAD.slice(), present:SQUAD.map(()=>true),
     gk:[-1,-1], bph:5, plan:null, live:{phase:'pre', el:[0,0], running:false, t0:0}};
 }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.names ? s : null }catch(e){ return null } }
