@@ -100,6 +100,8 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
 .grid td.c{width:28px;height:26px;border-radius:5px;background:var(--bg);text-align:center;font:700 .66rem var(--display);letter-spacing:.04em;color:var(--bib-ink)}
 .grid td.c.on{background:var(--bib)}
 .grid td.c.gk{background:var(--keeper);color:var(--keeper-ink)}
+.grid td.c.part{background:linear-gradient(135deg,var(--bib) 0 50%,var(--bg) 50% 100%)}
+.grid td.c.gk.part{background:linear-gradient(135deg,var(--keeper) 0 50%,var(--bg) 50% 100%)}
 .grid .split{border-left:2px solid var(--muted)}
 .grid .cur{box-shadow:inset 0 0 0 2px var(--ink)}
 .grid td.m{text-align:right;font:700 1rem var(--display);padding-left:6px}
@@ -195,10 +197,11 @@ const SQUAD = ['Alex','Ari','Atlas','Carter','Casper','Elliot','Henry','Raph'];
 const POS = [ {k:'GK',x:50,y:89}, {k:'LW',x:21,y:42}, {k:'MID',x:50,y:60}, {k:'RW',x:79,y:42}, {k:'ST',x:50,y:20} ];
 const FILL = [0,2,4,1,3];   // which empty position a newcomer takes first
 let S = load() || fresh();
+S.hist = S.hist || {};
 let sel = null, tickId = null, lastBlock = null, ac = null, wake = null, resetArmed = false;
 const _h = {};
 
-function fresh(){ return {present:SQUAD.map(()=>true), gk:[-1,-1], bph:5, plan:null, live:{phase:'pre', el:[0,0], running:false, t0:0}} }
+function fresh(){ return {present:SQUAD.map(()=>true), gk:[-1,-1], bph:5, plan:null, hist:{}, live:{phase:'pre', el:[0,0], running:false, t0:0}} }
 function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.present && s.present.length===SQUAD.length ? s : null }catch(e){ return null } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){} }
 
@@ -225,7 +228,7 @@ function replan(from, keepCurrent=false){
   if(plan.length<from){ plan=[]; from=0; keepCurrent=false }
   const cur = keepCurrent && S.plan && S.plan[from] ? S.plan[from] : null;
   const mins = Array(P).fill(0);
-  plan.forEach(b=>b.forEach(i=>{ if(i!=null) mins[i]++ }));
+  for(let b=0;b<from;b++) SQUAD.forEach((_,i)=>{ mins[i]+=secsIn(b,i,bLen()) });
   for(let b=from; b<n; b++){
     const half = b<S.bph?0:1, gk = S.gk[half];
     const avail = SQUAD.map((_,i)=>i).filter(i=>S.present[i]);
@@ -235,24 +238,53 @@ function replan(from, keepCurrent=false){
     if(base) base.forEach(i=>{ if(i!=null && S.present[i] && !chosen.includes(i) && chosen.length<need) chosen.push(i) });
     const prev = b>0 ? (plan[b-1]||[]) : [];
     const rest = avail.filter(i=>!chosen.includes(i))
-      .sort((a,c)=> mins[a]-mins[c] || (prev.includes(a)?1:0)-(prev.includes(c)?1:0) || a-c);
+      .sort((a,c)=> Math.round(mins[a])-Math.round(mins[c]) || (prev.includes(a)?1:0)-(prev.includes(c)?1:0) || a-c);
     while(chosen.length<need && rest.length) chosen.push(rest.shift());
     const ref = base || prev, slots = Array(ON).fill(null);
     if(gk>=0 && chosen.includes(gk)) slots[0]=gk;
     ref.forEach((i,k)=>{ if(i!=null && chosen.includes(i) && !slots.includes(i) && slots[k]==null) slots[k]=i });
     chosen.filter(i=>!slots.includes(i)).forEach(i=>{ slots[FILL.find(k=>slots[k]==null)] = i });
-    plan[b]=slots; slots.forEach(i=>{ if(i!=null) mins[i]++ });
+    plan[b]=slots; slots.forEach(i=>{ if(i!=null) mins[i]+=bLen() });
   }
   S.plan=plan; save();
 }
 
+/* Seconds actually played. A shift with no mid-shift changes is just its lineup;
+   one with changes keeps a history of [{t: seconds into shift, slots}]. */
+function secsIn(b, i, upto){
+  const h = S.hist[b];
+  if(!h) return S.plan[b] && S.plan[b].includes(i) ? upto : 0;
+  let s=0;
+  h.forEach((seg,k)=>{
+    const end = Math.min(upto, k+1<h.length ? h[k+1].t : upto);
+    if(seg.slots.includes(i) && end>seg.t) s += end-seg.t;
+  });
+  return s;
+}
+const offsetNow = () => elapsed() - (curBlock()%S.bph)*bLen();
 function playedSecs(i){
   if(!started()) return 0;
   const cb=curBlock(), L=bLen(); let s=0;
-  for(let b=0;b<cb;b++) if(S.plan[b].includes(i)) s+=L;
-  if(live() && S.plan[cb].includes(i)) s += elapsed() - (cb%S.bph)*L;
-  if(S.live.phase==='ft' && S.plan[cb].includes(i)) s+=L;
+  const full = S.live.phase==='ft' ? nB() : cb;
+  for(let b=0;b<full;b++) s+=secsIn(b,i,L);
+  if(live()) s += secsIn(cb,i,offsetNow());
   return s;
+}
+function projectedSecs(i){
+  const cb=curBlock(), L=bLen(); let s=0;
+  for(let b=0;b<nB();b++) s += (started() && b<=cb) ? secsIn(b,i,L) : (S.plan[b].includes(i)?L:0);
+  return s;
+}
+/* Change the lineup on the pitch right now. Mid-shift, remember when it happened. */
+function changeNow(slots){
+  const cb=curBlock(), before=S.plan[cb].slice();
+  if(live()){
+    const t=offsetNow();
+    if(!S.hist[cb]) S.hist[cb]=[{t:0, slots:before}];
+    S.hist[cb].push({t, slots:slots.slice()});
+  } else delete S.hist[cb];
+  S.plan[cb]=slots;
+  replan(cb+1);
 }
 
 /* ---------- render ---------- */
@@ -334,14 +366,16 @@ function renderPlan(cb){
   h+='<th>Min</th></tr></thead><tbody>';
   const totals=[];
   SQUAD.forEach((_,i)=>{
-    let cnt=0, row='';
+    let row='';
     for(let b=0;b<n;b++){
-      const k=S.plan[b].indexOf(i);
-      if(k>=0) cnt++;
-      const lab = k<0 ? '' : (POS[k].k==='MID'?'M':POS[k].k);
-      row+=`<td class="c ${k>=0?'on':''} ${k===0?'gk':''} ${b===S.bph?'split':''} ${started()&&b===cb?'cur':''}">${lab}</td>`;
+      const sec = (started() && b<=cb) ? secsIn(b,i,L) : (S.plan[b].includes(i)?L:0);
+      let k=S.plan[b].indexOf(i);
+      if(k<0 && sec>0 && S.hist[b]) { const seg=S.hist[b].find(g=>g.slots.includes(i)); k=seg?seg.slots.indexOf(i):-1 }
+      const on = sec>0, part = on && sec < L-1;
+      const lab = !on||k<0 ? '' : (POS[k].k==='MID'?'M':POS[k].k);
+      row+=`<td class="c ${on?'on':''} ${on&&k===0?'gk':''} ${part?'part':''} ${b===S.bph?'split':''} ${started()&&b===cb?'cur':''}">${lab}</td>`;
     }
-    const mins=Math.round(cnt*L/60);
+    const mins=Math.round(projectedSecs(i)/60);
     if(S.present[i]) totals.push(mins);
     h+=`<tr class="${S.present[i]?'':'absent'}"><td class="name">${esc(nm(i))}</td>${row}<td class="m">${S.present[i]?mins:'–'}</td></tr>`;
   });
@@ -359,20 +393,29 @@ function renderSettings(){
 /* ---------- actions ---------- */
 function tapPlayer(i){
   if(S.live.phase==='ft') return;
-  if(!S.present[i]){ S.present[i]=true; sel=null; replan(started()?curBlock():0, true); return render() }
+  if(!S.present[i]){                                   // back from injury: joins the queue at the next sub
+    S.present[i]=true; sel=null;
+    live() ? replan(curBlock()+1) : replan(curBlock());
+    return render();
+  }
   if(sel===null || sel===i){ sel = sel===i ? null : i; return render() }
-  const cb=curBlock(), slots=S.plan[cb].slice();
+  const slots=S.plan[curBlock()].slice();
   const a=slots.indexOf(sel), b=slots.indexOf(i);
   if(a<0 && b<0){ sel=i; return render() }           // two bench kids: just move the selection
   if(a>=0 && b>=0){ slots[a]=i; slots[b]=sel }         // two on pitch: swap positions
   else if(a>=0){ slots[a]=i } else { slots[b]=sel }    // bench for pitch
-  S.plan[cb]=slots; sel=null;
-  replan(cb+1);
-  render();
+  sel=null; changeNow(slots); render();
 }
 function markOut(i){
   S.present[i]=false; sel=null;
-  replan(started()?curBlock():0, started());
+  if(!live()){ replan(curBlock()); return render() }
+  const slots=S.plan[curBlock()].slice(), k=slots.indexOf(i);
+  if(k>=0){                                            // on the pitch: least-played bench kid replaces them
+    const bench=SQUAD.map((_,j)=>j).filter(j=>S.present[j] && !slots.includes(j))
+      .sort((a,c)=>playedSecs(a)-playedSecs(c) || a-c);
+    slots[k] = bench.length ? bench[0] : null;
+    changeNow(slots);
+  } else replan(curBlock()+1);
   render();
 }
 
@@ -392,13 +435,13 @@ document.getElementById('app').addEventListener('click', e=>{
   if(a==='h2'){ beep(); L.phase='h2'; L.el[1]=0; L.running=true; L.t0=Date.now(); lastBlock=S.bph; holdWake() }
   if(a==='reset'){
     if(!resetArmed){ resetArmed=true; setTimeout(()=>{ resetArmed=false; render() },3000) }
-    else { resetArmed=false; sel=null; S.live={phase:'pre',el:[0,0],running:false,t0:0}; S.present=SQUAD.map(()=>true); replan(0); releaseWake(); renderSettings() }
+    else { resetArmed=false; sel=null; S.live={phase:'pre',el:[0,0],running:false,t0:0}; S.present=SQUAD.map(()=>true); S.hist={}; S.plan=null; replan(0); releaseWake(); renderSettings() }
   }
   save(); render();
 });
-document.getElementById('bph').addEventListener('change', e=>{ S.bph=+e.target.value; S.plan=null; replan(0); render() });
+document.getElementById('bph').addEventListener('change', e=>{ S.bph=+e.target.value; S.plan=null; S.hist={}; replan(0); render() });
 [0,1].forEach(h=>document.getElementById('gk'+h).addEventListener('change', e=>{
-  S.gk[h]=+e.target.value; replan(started()?curBlock():0, started()); render();
+  S.gk[h]=+e.target.value; live() ? replan(curBlock()+1) : replan(curBlock()); render();
 }));
 document.getElementById('planBox').addEventListener('toggle', e=>{ try{ localStorage.setItem(KEY+'-plan', e.target.open?'1':'') }catch(_){} });
 
