@@ -11,153 +11,150 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
-/* Layout: sideline clipboard. One column, big tap targets, bib-orange marks who is on. */
+/* Layout: one sideline screen. Clock up top, mown pitch with bibs in position, bench strip, plan and settings tucked below. */
 :root{
   --bg:#EDF1EA; --surface:#FFFFFF; --ink:#13261B; --muted:#5A6C60; --line:#D2DACE;
   --turf:#1E6A3D; --turf-soft:#DCEBDF; --bib:#EE6A1C; --bib-ink:#FFFFFF; --warn:#B4361F;
+  --keeper:#F3C928; --keeper-ink:#2A2205;
+  --grass1:#3F8F52; --grass2:#479A5A; --chalk:#F4F8F2;
   --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0D1611; --surface:#15221A; --ink:#E6EEE8; --muted:#93A79A; --line:#27382D;
-  --turf:#46A86C; --turf-soft:#1C3324; --bib:#FF8A3D; --bib-ink:#1A0E05; --warn:#FF7A62; color-scheme:dark}}
+  --turf:#46A86C; --turf-soft:#1C3324; --bib:#FF8A3D; --bib-ink:#1A0E05; --warn:#FF7A62;
+  --keeper:#F5D04A; --keeper-ink:#1E1803; --grass1:#1E4D2C; --grass2:#225532; --chalk:#DCE8DF; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0D1611; --surface:#15221A; --ink:#E6EEE8; --muted:#93A79A; --line:#27382D;
-  --turf:#46A86C; --turf-soft:#1C3324; --bib:#FF8A3D; --bib-ink:#1A0E05; --warn:#FF7A62; color-scheme:dark}
+  --turf:#46A86C; --turf-soft:#1C3324; --bib:#FF8A3D; --bib-ink:#1A0E05; --warn:#FF7A62;
+  --keeper:#F5D04A; --keeper-ink:#1E1803; --grass1:#1E4D2C; --grass2:#225532; --chalk:#DCE8DF; color-scheme:dark}
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 40px}
-.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-family:var(--display);font-weight:700;font-size:2rem;line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase}
-.fmt{color:var(--muted);font-size:.85rem;letter-spacing:.06em;text-transform:uppercase}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px}
-.tabs button{font:700 1rem var(--body);border:0;background:transparent;color:var(--muted);padding:10px 4px;border-radius:7px;cursor:pointer}
-.tabs button[aria-selected="true"]{background:var(--turf);color:#fff}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--bib);outline-offset:2px}
-.panel{display:flex;flex-direction:column;gap:16px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-h2{font-family:var(--display);font-weight:700;font-size:1.25rem;text-transform:uppercase;letter-spacing:.04em;margin:0}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+button{-webkit-tap-highlight-color:transparent}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--bib);outline-offset:2px}
 .hint{color:var(--muted);font-size:.9rem;margin:0}
-/* squad */
-.row{display:flex;align-items:center;gap:8px}
-.row .num{width:24px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
-.row input[type=text]{flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-.toggle{font:700 .85rem var(--body);min-width:64px;padding:10px 8px;border-radius:8px;border:1px solid var(--line);cursor:pointer;background:var(--turf-soft);color:var(--turf)}
-.toggle.out{background:transparent;color:var(--warn);border-color:var(--warn)}
-.field{display:flex;flex-direction:column;gap:6px}
-.field label{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:420px){.two{grid-template-columns:1fr}}
-.ghost{font:700 .95rem var(--body);background:transparent;border:1px dashed var(--line);color:var(--muted);padding:10px;border-radius:8px;cursor:pointer}
-/* grid */
-.scroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
-table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums;width:100%}
-.grid th{font:600 .8rem var(--display);color:var(--muted);letter-spacing:.04em;padding:2px 0;text-align:center}
-.grid th.name,.grid td.name{text-align:left;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;padding-right:6px;font:400 .95rem var(--body);color:var(--ink)}
-.grid td.cell{height:30px;min-width:24px;border-radius:5px;background:var(--bg);text-align:center;font:700 .75rem var(--display);color:var(--bib-ink)}
-.grid td.cell.on{background:var(--bib)}
-.grid td.cell.gk{background:var(--turf);color:#fff}
-.grid .split{border-left:2px solid var(--muted)}
-.grid th.split{border-left:2px solid var(--muted)}
-.grid .cur{box-shadow:inset 0 0 0 2px var(--ink)}
-.grid td.mins{text-align:right;font:700 1rem var(--display);padding-left:6px}
-.grid tr.absent td.name{color:var(--muted);text-decoration:line-through}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
-/* live */
-.clock{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.time{font:700 4.2rem/0.9 var(--display);font-variant-numeric:tabular-nums;letter-spacing:.01em}
-.phase{font:700 1rem var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--turf)}
+
+/* clock */
+.clock{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.clockrow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.phase{font:700 .95rem var(--display);text-transform:uppercase;letter-spacing:.08em;color:var(--turf)}
+.time{font:700 3.6rem/0.9 var(--display);font-variant-numeric:tabular-nums}
 .ctrls{display:flex;gap:8px;flex-wrap:wrap}
-.btn{font:700 1.05rem var(--body);border:0;border-radius:10px;padding:14px 20px;cursor:pointer;background:var(--turf);color:#fff}
+.btn{font:700 1rem var(--body);border:0;border-radius:10px;padding:13px 18px;cursor:pointer;background:var(--turf);color:#fff}
 .btn.alt{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--warn);border:1px solid var(--warn)}
-.next{border-radius:10px;padding:12px 14px;background:var(--turf-soft);display:flex;flex-direction:column;gap:8px}
+.next{border-radius:10px;padding:10px 12px;background:var(--turf-soft);display:flex;flex-direction:column;gap:4px}
 .next .when{font:700 1.15rem var(--display);text-transform:uppercase;letter-spacing:.04em}
 .next .when b{font-variant-numeric:tabular-nums}
-.swap{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline}
-.swap .k{font:700 .8rem var(--display);letter-spacing:.08em;text-transform:uppercase}
-.swap .k.off{color:var(--warn)} .swap .k.in{color:var(--turf)}
+.next .chg{font-size:.95rem}
+.next .chg b{font-weight:700}
+.next .chg span{color:var(--muted);font:700 .8rem var(--display);letter-spacing:.06em;margin-left:4px}
+
+/* pitch */
+.pitch{position:relative;width:100%;aspect-ratio:100/118;border-radius:14px;overflow:hidden;
+  background:repeating-linear-gradient(180deg,var(--grass1) 0 12.5%,var(--grass2) 12.5% 25%)}
+.pitch svg{position:absolute;inset:0;width:100%;height:100%}
+.pitch svg *{stroke:var(--chalk);stroke-opacity:.7;stroke-width:.6;fill:none}
+.pitch svg .dot{fill:var(--chalk);fill-opacity:.7;stroke:none}
+.tok{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;padding:4px;cursor:pointer;color:inherit}
+.tok .pos{font:700 .72rem var(--display);letter-spacing:.12em;color:var(--chalk);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.tok .b{position:relative;min-width:76px;padding:9px 12px;border-radius:999px;background:var(--bib);color:var(--bib-ink);font:700 1rem var(--body);box-shadow:0 2px 0 rgba(0,0,0,.28);white-space:nowrap}
+.tok.gk .b{background:var(--keeper);color:var(--keeper-ink)}
+.tok.empty .b{background:transparent;border:2px dashed var(--chalk);color:var(--chalk);box-shadow:none}
+.tok.sel .b{outline:3px solid var(--chalk);outline-offset:3px}
+.picking .tok:not(.sel) .b{box-shadow:0 0 0 2px var(--chalk)}
+.tag{position:absolute;top:-9px;right:-8px;font:700 .62rem var(--display);letter-spacing:.08em;background:var(--ink);color:var(--surface);padding:2px 5px;border-radius:4px}
+
+/* bench */
+.bench{display:flex;flex-direction:column;gap:8px}
+.sub{font:700 .8rem var(--display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{font:700 1rem var(--body);border-radius:999px;padding:10px 14px;border:0;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
-.chip.on{background:var(--bib);color:var(--bib-ink)}
-.chip.gk{background:var(--turf);color:#fff}
-.chip.bench{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
-.chip.absent{background:transparent;color:var(--muted);border:1px dashed var(--line);text-decoration:line-through}
-.chip small{font-size:.75rem;opacity:.85;font-weight:400}
-.sub{font:700 .8rem var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.chip{position:relative;font:700 1rem var(--body);border-radius:999px;padding:10px 14px;cursor:pointer;background:var(--surface);color:var(--ink);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:baseline}
+.chip small{font-weight:400;font-size:.78rem;color:var(--muted)}
 .chip.sel{outline:3px solid var(--ink);outline-offset:2px}
-.swapbox{border:2px solid var(--bib);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
-.swapbox .q{font:700 1.15rem var(--display);text-transform:uppercase;letter-spacing:.04em}
-.swapbox .acts{display:flex;gap:8px;flex-wrap:wrap}
-.swapbox .acts button{font:700 .9rem var(--body);padding:10px 14px;border-radius:8px;cursor:pointer;background:transparent;border:1px solid var(--line);color:var(--ink)}
-.swapbox .acts .out{color:var(--warn);border-color:var(--warn)}
+.picking .chip:not(.sel):not(.absent){border-color:var(--bib)}
+.chip.absent{background:transparent;color:var(--muted);border-style:dashed;text-decoration:line-through}
+.chip .tag{top:-8px;right:-4px}
+
+/* action bar */
+.act{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.act p{margin:0;flex:1 1 180px;font-size:.95rem}
+.act button{font:700 .9rem var(--body);padding:9px 12px;border-radius:8px;cursor:pointer;border:1px solid currentColor;background:transparent;color:var(--surface)}
+.act .out{background:var(--warn);border-color:var(--warn);color:#fff}
+
+/* collapsibles */
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+summary{cursor:pointer;padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary h2{font:700 1.05rem var(--display);text-transform:uppercase;letter-spacing:.05em;margin:0}
+summary span{color:var(--muted);font-size:.85rem;text-align:right}
+summary::after{content:"+";font:700 1.2rem var(--display);color:var(--muted)}
+details[open] summary::after{content:"–"}
+.inner{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
+.scroll{overflow-x:auto}
+table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums}
+.grid th{font:600 .78rem var(--display);color:var(--muted);letter-spacing:.04em;text-align:center;padding:0}
+.grid td.name{white-space:nowrap;padding-right:6px;font-size:.92rem}
+.grid td.c{width:28px;height:26px;border-radius:5px;background:var(--bg);text-align:center;font:700 .66rem var(--display);letter-spacing:.04em;color:var(--bib-ink)}
+.grid td.c.on{background:var(--bib)}
+.grid td.c.gk{background:var(--keeper);color:var(--keeper-ink)}
+.grid .split{border-left:2px solid var(--muted)}
+.grid .cur{box-shadow:inset 0 0 0 2px var(--ink)}
+.grid td.m{text-align:right;font:700 1rem var(--display);padding-left:6px}
+.grid tr.absent td.name{color:var(--muted);text-decoration:line-through}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .flash{animation:flash 1s ease 3}
 @keyframes flash{50%{background:var(--bib);color:var(--bib-ink)}}
 @media (prefers-reduced-motion:reduce){.flash{animation:none}}
 </style>
 
-<div class="wrap">
-  <header>
-    <h1>Five-a-Side Rotation</h1>
-    <span class="fmt">5 on · 2 × 25 min</span>
-  </header>
+<div class="wrap" id="app">
+  <section class="clock">
+    <div class="clockrow">
+      <div><div class="phase" id="phase">Pre-match</div><div class="time" id="time">00:00</div></div>
+      <div class="ctrls" id="ctrls"></div>
+    </div>
+    <div class="next" id="next"></div>
+  </section>
 
-  <div class="tabs" role="tablist">
-    <button role="tab" id="tab-match" data-tab="match">Match</button>
-    <button role="tab" id="tab-plan" data-tab="plan">Rotation</button>
-    <button role="tab" id="tab-squad" data-tab="squad">Squad</button>
+  <div class="pitch" id="pitch">
+    <svg viewBox="0 0 100 118" aria-hidden="true">
+      <rect x="4" y="4" width="92" height="110"/>
+      <path d="M38 4 A12 12 0 0 0 62 4"/>
+      <circle class="dot" cx="50" cy="4" r="1"/>
+      <rect x="24" y="94" width="52" height="20"/>
+      <circle class="dot" cx="50" cy="88" r=".9"/>
+      <rect x="40" y="114" width="20" height="3"/>
+    </svg>
+    <div id="toks"></div>
   </div>
 
-  <section class="panel" id="p-match" hidden>
-    <div class="card">
-      <div class="clock">
-        <div>
-          <div class="phase" id="phase">Pre-match</div>
-          <div class="time" id="time">00:00</div>
-        </div>
-        <div class="ctrls" id="ctrls"></div>
-      </div>
-      <div class="next" id="next"></div>
-    </div>
-    <div class="card">
-      <p class="sub">On the pitch</p>
-      <div class="chips" id="onNow"></div>
-      <p class="sub">Bench</p>
-      <div class="chips" id="benchNow"></div>
-      <div id="absentWrap" hidden><p class="sub">Unavailable</p><div class="chips" id="absentNow"></div></div>
-      <div class="swapbox" id="swapbox" hidden></div>
-      <p class="hint" id="swapHint">Tap a bench player to bring them on, then pick who comes off. The rest of the game re-balances around the change.</p>
-    </div>
+  <section class="bench">
+    <p class="sub">Bench</p>
+    <div class="chips" id="benchNow"></div>
+    <div id="absentWrap" hidden><p class="sub" style="margin-top:4px">Not playing</p><div class="chips" id="absentNow"></div></div>
   </section>
 
-  <section class="panel" id="p-plan" hidden>
-    <div class="card">
-      <h2>Rotation plan</h2>
-      <p class="hint" id="fair"></p>
+  <div class="act" id="act" hidden></div>
+  <p class="hint" id="help">Tap two players to swap them. Bench for pitch, or two on the pitch to change positions.</p>
+
+  <details id="planBox">
+    <summary><h2>Full rotation</h2><span id="fair"></span></summary>
+    <div class="inner">
       <div class="scroll"><table class="grid" id="grid"></table></div>
-      <div class="legend">
-        <span><i class="sw" style="background:var(--bib)"></i>On pitch</span>
-        <span><i class="sw" style="background:var(--turf)"></i>Keeper</span>
-        <span><i class="sw" style="background:var(--bg);border:1px solid var(--line)"></i>Bench</span>
-      </div>
     </div>
-  </section>
+  </details>
 
-  <section class="panel" id="p-squad" hidden>
-    <div class="card">
-      <h2>Squad</h2>
-      <p class="hint">Tap a name to change it. Mark anyone who can't make it as Out.</p>
-      <div id="roster" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button class="ghost" id="addPlayer">+ Add player</button>
-    </div>
-    <div class="card">
-      <h2>Settings</h2>
+  <details id="setBox">
+    <summary><h2>Settings</h2><span></span></summary>
+    <div class="inner">
       <div class="field">
-        <label for="bph">Sub changes</label>
+        <label for="bph">Subs</label>
         <select id="bph">
           <option value="5">Every 5:00 (4 changes a half)</option>
           <option value="4">Every 6:15 (3 changes a half)</option>
@@ -168,219 +165,237 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
         <div class="field"><label for="gk0">Keeper, 1st half</label><select id="gk0"></select></div>
         <div class="field"><label for="gk1">Keeper, 2nd half</label><select id="gk1"></select></div>
       </div>
-      <p class="hint">A fixed keeper plays the whole half. Leave as "Rotate" if keepers swap among whoever is on.</p>
+      <p class="hint">"Rotates" means the keeper gets subbed like everyone else. Pick a name to keep one kid in goal for the whole half.</p>
     </div>
-  </section>
+  </details>
 </div>
 
 <script>
-const HALF = 25*60, ON = 5, KEY = 'fas-rotation-v2';
+const HALF = 25*60, ON = 5, KEY = 'fas-rotation-v3';
 const SQUAD = ['Alex','Ari','Atlas','Carter','Casper','Elliot','Henry','Raph'];
+const POS = [ {k:'GK',x:50,y:89}, {k:'LW',x:21,y:42}, {k:'MID',x:50,y:60}, {k:'RW',x:79,y:42}, {k:'ST',x:50,y:20} ];
+const FILL = [0,2,4,1,3];   // which empty position a newcomer takes first
 let S = load() || fresh();
-let tab = 'plan', tickId = null, lastBlock = null, ac = null, wake = null, resetArmed = false;
+let sel = null, tickId = null, lastBlock = null, ac = null, wake = null, resetArmed = false;
+const _h = {};
 
-function fresh(){
-  return {names:SQUAD.slice(), present:SQUAD.map(()=>true),
-    gk:[-1,-1], bph:5, plan:null, live:{phase:'pre', el:[0,0], running:false, t0:0}};
-}
-function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.names ? s : null }catch(e){ return null } }
+function fresh(){ return {present:SQUAD.map(()=>true), gk:[-1,-1], bph:5, plan:null, live:{phase:'pre', el:[0,0], running:false, t0:0}} }
+function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)); return s && s.present && s.present.length===SQUAD.length ? s : null }catch(e){ return null } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){} }
 
-const nB = () => S.bph*2;
-const bLen = () => HALF/S.bph;
-const fmt = s => { s=Math.max(0,Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0') };
-const nm = i => (S.names[i]||'').trim() || 'Player '+(i+1);
+const nB = () => S.bph*2, bLen = () => HALF/S.bph;
+const fmt = s => { s=Math.max(0,Math.ceil(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0') };
+const nm = i => SQUAD[i];
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const started = () => S.live.phase !== 'pre';
+const live = () => S.live.phase==='h1' || S.live.phase==='h2';
+function setHTML(id,h){ if(_h[id]===h) return; _h[id]=h; document.getElementById(id).innerHTML=h }
 
-function elapsed(){
-  const L = S.live, h = L.phase==='h2'?1:0;
-  return L.el[h] + (L.running ? (Date.now()-L.t0)/1000 : 0);
-}
+function elapsed(){ const L=S.live, h=L.phase==='h2'?1:0; return L.el[h] + (L.running ? (Date.now()-L.t0)/1000 : 0) }
 function curBlock(){
-  const L = S.live, e = elapsed(), idx = Math.min(S.bph-1, Math.floor(e/bLen()));
-  if(L.phase==='pre') return 0;
-  if(L.phase==='h1') return idx;
-  if(L.phase==='ht') return S.bph;
-  if(L.phase==='h2') return S.bph+idx;
-  return nB()-1;
+  const L=S.live, idx=Math.min(S.bph-1, Math.floor(elapsed()/bLen()));
+  return {pre:0, h1:idx, ht:S.bph, h2:S.bph+idx, ft:nB()-1}[L.phase];
 }
 
-/* Greedy balancer: each shift, fixed keeper first, then whoever has played least.
-   Ties go to kids who sat out the previous shift, then roster order. */
-function replan(from, keepCurrent = true){
-  const n = nB(), P = S.names.length;
+/* Plan = one array of 5 position slots per shift. Who plays: least minutes first,
+   ties to kids who sat out last shift. Where: stay put if you were already on,
+   newcomers take the gaps left by whoever came off. */
+function replan(from, keepCurrent=false){
+  const n=nB(), P=SQUAD.length;
   let plan = (S.plan && S.plan.length===n) ? S.plan.slice(0,from) : [];
-  if(plan.length < from){ plan = []; from = 0 }
+  if(plan.length<from){ plan=[]; from=0; keepCurrent=false }
+  const cur = keepCurrent && S.plan && S.plan[from] ? S.plan[from] : null;
   const mins = Array(P).fill(0);
-  plan.forEach(b => b.forEach(i => { if(i<P) mins[i]++ }));
+  plan.forEach(b=>b.forEach(i=>{ if(i!=null) mins[i]++ }));
   for(let b=from; b<n; b++){
-    const half = b < S.bph ? 0 : 1;
-    const avail = S.names.map((_,i)=>i).filter(i=>S.present[i]);
-    const need = Math.min(ON, avail.length);
-    const lineup = [];
-    const gk = S.gk[half];
-    if(gk>=0 && gk<P && S.present[gk]) lineup.push(gk);
-    if(b===from && keepCurrent && started() && S.plan && S.plan[b]){
-      S.plan[b].forEach(i => { if(i<P && S.present[i] && !lineup.includes(i) && lineup.length<need) lineup.push(i) });
-    }
-    const prev = b>0 ? plan[b-1] : [];
-    const rest = avail.filter(i=>!lineup.includes(i))
+    const half = b<S.bph?0:1, gk = S.gk[half];
+    const avail = SQUAD.map((_,i)=>i).filter(i=>S.present[i]);
+    const need = Math.min(ON, avail.length), chosen = [];
+    if(gk>=0 && S.present[gk]) chosen.push(gk);
+    const base = (b===from && cur) ? cur : null;
+    if(base) base.forEach(i=>{ if(i!=null && S.present[i] && !chosen.includes(i) && chosen.length<need) chosen.push(i) });
+    const prev = b>0 ? (plan[b-1]||[]) : [];
+    const rest = avail.filter(i=>!chosen.includes(i))
       .sort((a,c)=> mins[a]-mins[c] || (prev.includes(a)?1:0)-(prev.includes(c)?1:0) || a-c);
-    while(lineup.length<need && rest.length) lineup.push(rest.shift());
-    plan[b] = lineup;
-    lineup.forEach(i=>mins[i]++);
+    while(chosen.length<need && rest.length) chosen.push(rest.shift());
+    const ref = base || prev, slots = Array(ON).fill(null);
+    if(gk>=0 && chosen.includes(gk)) slots[0]=gk;
+    ref.forEach((i,k)=>{ if(i!=null && chosen.includes(i) && !slots.includes(i) && slots[k]==null) slots[k]=i });
+    chosen.filter(i=>!slots.includes(i)).forEach(i=>{ slots[FILL.find(k=>slots[k]==null)] = i });
+    plan[b]=slots; slots.forEach(i=>{ if(i!=null) mins[i]++ });
   }
-  S.plan = plan; save();
+  S.plan=plan; save();
 }
 
-/* ---------- rendering ---------- */
-function setTab(t){
-  tab = t;
-  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===t));
-  ['match','plan','squad'].forEach(k=>document.getElementById('p-'+k).hidden = k!==t);
-  try{ localStorage.setItem(KEY+'-tab', t) }catch(e){}
+function playedSecs(i){
+  if(!started()) return 0;
+  const cb=curBlock(), L=bLen(); let s=0;
+  for(let b=0;b<cb;b++) if(S.plan[b].includes(i)) s+=L;
+  if(live() && S.plan[cb].includes(i)) s += elapsed() - (cb%S.bph)*L;
+  if(S.live.phase==='ft' && S.plan[cb].includes(i)) s+=L;
+  return s;
+}
+
+/* ---------- render ---------- */
+function render(){
+  if(!S.plan || S.plan.length!==nB()) replan(0);
+  const L=S.live, e=elapsed(), cb=curBlock(), len=bLen();
+  const slots = S.plan[cb], onSet = slots.filter(i=>i!=null);
+  const half = cb<S.bph?0:1;
+
+  // clock
+  const labels={pre:'Pre-match',h1:'1st half',ht:'Half time',h2:'2nd half',ft:'Full time'};
+  document.getElementById('phase').textContent = labels[L.phase] + (live() && !L.running ? ' · paused' : '');
+  document.getElementById('time').textContent = L.phase==='ht' ? '25:00' : L.phase==='ft' ? '50:00' : fmt(Math.floor(e) + (L.phase==='h2'?HALF:0) - 0.0001);
+  let c='';
+  if(L.phase==='pre') c=`<button class="btn" data-a="go">Kick off</button>`;
+  else if(live()) c = L.running ? `<button class="btn alt" data-a="pause">Pause</button>` : `<button class="btn" data-a="resume">Resume</button>`;
+  else if(L.phase==='ht') c=`<button class="btn" data-a="h2">Start 2nd half</button>`;
+  if(started()) c+=`<button class="btn danger" data-a="reset">${resetArmed?'Tap again':'Reset'}</button>`;
+  setHTML('ctrls', c);
+
+  // next change
+  let nx='', offNext=[], onNext=[];
+  if(L.phase==='pre') nx=`<div class="when">Starting five</div><div class="chg">Tap two players to swap before kick-off.</div>`;
+  else if(L.phase==='ht') nx=`<div class="when">2nd half lineup</div><div class="chg">Shown on the pitch. Swap anyone before you start.</div>`;
+  else if(L.phase==='ft') nx=`<div class="when">Full time</div><div class="chg">Good work, coach.</div>`;
+  else {
+    const inHalf = cb%S.bph, left = (inHalf+1)*len - e, last = inHalf===S.bph-1;
+    if(last) nx=`<div class="when">${half?'Full time':'Half time'} in <b>${fmt(left)}</b></div>`;
+    else {
+      const nxt=S.plan[cb+1];
+      nx=`<div class="when">Next change in <b>${fmt(left)}</b></div>`;
+      const rows=[];
+      nxt.forEach((i,k)=>{ if(i!=null && !onSet.includes(i)){ const out=slots[k]; onNext.push(i); if(out!=null && !nxt.includes(out)) offNext.push(out);
+        rows.push(`<div class="chg"><b>${esc(nm(i))}</b> on for <b>${out!=null && !nxt.includes(out) ? esc(nm(out)) : '—'}</b><span>${POS[k].k}</span></div>`) } });
+      onSet.forEach(i=>{ if(!nxt.includes(i) && !offNext.includes(i)) offNext.push(i) });
+      nx += rows.join('') || `<div class="chg">No change.</div>`;
+    }
+  }
+  setHTML('next', nx);
+
+  // pitch
+  document.getElementById('pitch').classList.toggle('picking', sel!==null);
+  setHTML('toks', POS.map((p,k)=>{
+    const i=slots[k], isGk=k===0;
+    if(i==null) return `<button class="tok empty${isGk?' gk':''}" style="left:${p.x}%;top:${p.y}%" disabled><span class="pos">${p.k}</span><span class="b">Empty</span></button>`;
+    const tag = offNext.includes(i) ? '<span class="tag">OFF</span>' : '';
+    return `<button class="tok${isGk?' gk':''}${sel===i?' sel':''}" style="left:${p.x}%;top:${p.y}%" data-t="${i}"><span class="pos">${p.k}</span><span class="b">${esc(nm(i))}${tag}</span></button>`;
+  }).join(''));
+
+  // bench
+  const present = SQUAD.map((_,i)=>i).filter(i=>S.present[i]);
+  const bench = present.filter(i=>!onSet.includes(i));
+  document.querySelector('.bench').classList.toggle('picking', sel!==null);
+  setHTML('benchNow', bench.map(i=>{
+    const m = started() ? `<small>${Math.floor(playedSecs(i)/60)}'</small>` : '';
+    const tag = onNext.includes(i) ? '<span class="tag">NEXT</span>' : '';
+    return `<button class="chip${sel===i?' sel':''}" data-t="${i}">${esc(nm(i))}${m}${tag}</button>`;
+  }).join('') || '<span class="hint">Nobody on the bench</span>');
+  const absent = SQUAD.map((_,i)=>i).filter(i=>!S.present[i]);
+  document.getElementById('absentWrap').hidden = !absent.length;
+  setHTML('absentNow', absent.map(i=>`<button class="chip absent" data-t="${i}">${esc(nm(i))}</button>`).join(''));
+
+  // action bar
+  const act=document.getElementById('act');
+  if(sel===null){ act.hidden=true; setHTML('act','') }
+  else {
+    act.hidden=false;
+    setHTML('act', `<p><b>${esc(nm(sel))}</b> selected. Tap who to swap with.</p><button data-x="cancel">Cancel</button><button class="out" data-x="out">Not playing</button>`);
+  }
+  document.getElementById('help').hidden = sel!==null || L.phase==='ft';
+
+  renderPlan(cb);
+}
+
+function renderPlan(cb){
+  const n=nB(), L=bLen();
+  let h='<thead><tr><th></th>';
+  for(let b=0;b<n;b++) h+=`<th class="${b===S.bph?'split':''}">${b%S.bph===0?(b<S.bph?'1H':'2H'):Math.round((b%S.bph)*L/60)+"'"}</th>`;
+  h+='<th>Min</th></tr></thead><tbody>';
+  const totals=[];
+  SQUAD.forEach((_,i)=>{
+    let cnt=0, row='';
+    for(let b=0;b<n;b++){
+      const k=S.plan[b].indexOf(i);
+      if(k>=0) cnt++;
+      const lab = k<0 ? '' : (POS[k].k==='MID'?'M':POS[k].k);
+      row+=`<td class="c ${k>=0?'on':''} ${k===0?'gk':''} ${b===S.bph?'split':''} ${started()&&b===cb?'cur':''}">${lab}</td>`;
+    }
+    const mins=Math.round(cnt*L/60);
+    if(S.present[i]) totals.push(mins);
+    h+=`<tr class="${S.present[i]?'':'absent'}"><td class="name">${esc(nm(i))}</td>${row}<td class="m">${S.present[i]?mins:'–'}</td></tr>`;
+  });
+  setHTML('grid', h+'</tbody>');
+  const lo=Math.min(...totals), hi=Math.max(...totals);
+  document.getElementById('fair').textContent = totals.length<=ON ? 'Everyone plays the whole game' : `Everyone plays ${lo===hi?lo:lo+'–'+hi} min`;
+}
+
+function renderSettings(){
+  const opts='<option value="-1">Rotates</option>'+SQUAD.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('');
+  [0,1].forEach(h=>{ const s=document.getElementById('gk'+h); s.innerHTML=opts; s.value=String(S.gk[h]) });
+  const b=document.getElementById('bph'); b.value=String(S.bph); b.disabled=started();
+}
+
+/* ---------- actions ---------- */
+function tapPlayer(i){
+  if(S.live.phase==='ft') return;
+  if(!S.present[i]){ S.present[i]=true; sel=null; replan(started()?curBlock():0, true); return render() }
+  if(sel===null || sel===i){ sel = sel===i ? null : i; return render() }
+  const cb=curBlock(), slots=S.plan[cb].slice();
+  const a=slots.indexOf(sel), b=slots.indexOf(i);
+  if(a<0 && b<0){ sel=i; return render() }           // two bench kids: just move the selection
+  if(a>=0 && b>=0){ slots[a]=i; slots[b]=sel }         // two on pitch: swap positions
+  else if(a>=0){ slots[a]=i } else { slots[b]=sel }    // bench for pitch
+  S.plan[cb]=slots; sel=null;
+  replan(cb+1);
+  render();
+}
+function markOut(i){
+  S.present[i]=false; sel=null;
+  replan(started()?curBlock():0, started());
   render();
 }
 
-function renderSquad(){
-  const r = document.getElementById('roster');
-  r.innerHTML = S.names.map((n,i)=>`
-    <div class="row">
-      <span class="num">${i+1}</span>
-      <input type="text" id="name-${i}" data-i="${i}" value="${n.replace(/"/g,'&quot;')}" aria-label="Player ${i+1} name" maxlength="20">
-      <button class="toggle ${S.present[i]?'':'out'}" data-p="${i}">${S.present[i]?'Here':'Out'}</button>
-    </div>`).join('');
-  document.getElementById('addPlayer').hidden = S.names.length >= 12;
-  const opts = '<option value="-1">Rotate</option>' + S.names.map((_,i)=>`<option value="${i}">${esc(nm(i))}</option>`).join('');
-  [0,1].forEach(h=>{ const s=document.getElementById('gk'+h); s.innerHTML=opts; s.value=String(S.gk[h]) });
-  const bph = document.getElementById('bph'); bph.value = String(S.bph); bph.disabled = started();
-}
-
-function renderPlan(){
-  const n = nB(), cb = started() ? curBlock() : -1, L = bLen();
-  let h = '<thead><tr><th class="name"></th>';
-  for(let b=0;b<n;b++){
-    const m = Math.round((b % S.bph) * L / 60);
-    h += `<th class="${b===S.bph?'split':''}">${b%S.bph===0 ? (b<S.bph?'1H':'2H') : m+"'"}</th>`;
+document.getElementById('app').addEventListener('click', e=>{
+  const t=e.target.closest('[data-t]'); if(t) return tapPlayer(+t.dataset.t);
+  const x=e.target.closest('[data-x]')?.dataset.x;
+  if(x==='cancel'){ sel=null; return render() }
+  if(x==='out' && sel!==null) return markOut(sel);
+  const a=e.target.closest('[data-a]')?.dataset.a; if(!a) return;
+  const L=S.live;
+  if(a!=='reset') resetArmed=false;
+  if(a==='go'){ beep(); L.phase='h1'; L.el=[0,0]; L.running=true; L.t0=Date.now(); lastBlock=0; holdWake() }
+  if(a==='pause'){ L.el[L.phase==='h2'?1:0]=elapsed(); L.running=false; releaseWake() }
+  if(a==='resume'){ L.running=true; L.t0=Date.now(); holdWake() }
+  if(a==='h2'){ beep(); L.phase='h2'; L.el[1]=0; L.running=true; L.t0=Date.now(); lastBlock=S.bph; holdWake() }
+  if(a==='reset'){
+    if(!resetArmed){ resetArmed=true; setTimeout(()=>{ resetArmed=false; render() },3000) }
+    else { resetArmed=false; sel=null; S.live={phase:'pre',el:[0,0],running:false,t0:0}; S.present=SQUAD.map(()=>true); replan(0); releaseWake(); renderSettings() }
   }
-  h += '<th>Min</th></tr></thead><tbody>';
-  const totals = [];
-  S.names.forEach((_,i)=>{
-    let cnt = 0, row = '';
-    for(let b=0;b<n;b++){
-      const on = S.plan[b].includes(i), half = b<S.bph?0:1, isGk = on && S.gk[half]===i;
-      if(on) cnt++;
-      row += `<td class="cell ${on?'on':''} ${isGk?'gk':''} ${b===S.bph?'split':''} ${b===cb?'cur':''}">${isGk?'GK':''}</td>`;
-    }
-    const mins = Math.round(cnt*L/60);
-    if(S.present[i]) totals.push(mins);
-    h += `<tr class="${S.present[i]?'':'absent'}"><td class="name">${esc(nm(i))}</td>${row}<td class="mins">${S.present[i]?mins:'–'}</td></tr>`;
-  });
-  document.getElementById('grid').innerHTML = h + '</tbody>';
-  const lo = Math.min(...totals), hi = Math.max(...totals), here = totals.length;
-  document.getElementById('fair').textContent = here < ON
-    ? `Only ${here} players available, so everyone plays the whole game.`
-    : `${here} players, ${ON} on. Everyone gets ${lo===hi ? lo : lo+'–'+hi} minutes${S.gk.some(g=>g>=0)?' (a fixed keeper adds more)':''}.`;
-}
-
-function chip(i, cls, extra=''){
-  return `<button class="chip ${cls}" data-t="${i}">${esc(nm(i))}${extra}</button>`;
-}
-
-function renderMatch(){
-  const L = S.live, e = elapsed(), cb = curBlock(), len = bLen();
-  const labels = {pre:'Pre-match', h1:'1st half', ht:'Half time', h2:'2nd half', ft:'Full time'};
-  document.getElementById('phase').textContent = labels[L.phase] + (L.running||L.phase==='pre'||L.phase==='ht'||L.phase==='ft' ? '' : ' · paused');
-  document.getElementById('time').textContent = L.phase==='ht' ? '25:00' : L.phase==='ft' ? '50:00' : fmt(e + (L.phase==='h2'?HALF:0));
-
-  let c = '';
-  if(L.phase==='pre') c = `<button class="btn" data-a="go">Kick off</button>`;
-  else if(L.phase==='h1'||L.phase==='h2') c = L.running ? `<button class="btn alt" data-a="pause">Pause</button>` : `<button class="btn" data-a="resume">Resume</button>`;
-  else if(L.phase==='ht') c = `<button class="btn" data-a="h2">Start 2nd half</button>`;
-  if(L.phase!=='pre') c += `<button class="btn danger" data-a="reset">${resetArmed?'Tap again to reset':'Reset'}</button>`;
-  setHTML('ctrls', c);
-
-  const lineup = S.plan[cb] || [];
-  const half = cb < S.bph ? 0 : 1;
-  const sl = i => sel===i ? ' sel' : '';
-  setHTML('onNow', lineup.map(i=>chip(i, (S.gk[half]===i?'gk':'on')+sl(i), S.gk[half]===i?' <small>GK</small>':''))
-  .join(''));
-  const present = S.names.map((_,i)=>i).filter(i=>S.present[i]);
-  const bench = present.filter(i=>!lineup.includes(i));
-  setHTML('benchNow', bench.map(i=>chip(i,'bench'+sl(i))).join('') || '<span class="hint">Nobody</span>');
-
-  // swap prompt
-  const box = document.getElementById('swapbox');
-  if(sel===null || !S.present[sel]){ sel = null; box.hidden = true; setHTML('swapbox','') }
-  else {
-    const onField = lineup.includes(sel);
-    const others = onField ? bench : lineup;
-    const q = onField ? `Take ${esc(nm(sel))} off for…` : `Bring ${esc(nm(sel))} on for…`;
-    const html = `<div class="q">${q}</div>
-      <div class="chips">${others.map(i=>`<button class="chip ${onField?'bench':(S.gk[half]===i?'gk':'on')}" data-swap="${i}">${esc(nm(i))}</button>`).join('') || '<span class="hint">Nobody available</span>'}</div>
-      <div class="acts"><button data-x="cancel">Cancel</button><button class="out" data-x="out">${esc(nm(sel))} can't play on</button></div>`;
-    setHTML('swapbox', html);
-    box.hidden = false;
-  }
-  document.getElementById('swapHint').hidden = sel!==null;
-  const absent = S.names.map((_,i)=>i).filter(i=>!S.present[i]);
-  document.getElementById('absentWrap').hidden = !absent.length;
-  setHTML('absentNow', absent.map(i=>chip(i,'absent')).join(''));
-
-  // next change
-  let nxt = '';
-  if(L.phase==='ft'){ nxt = `<div class="when">Game over. Good work, coach.</div>` }
-  else {
-    const isLast = (cb % S.bph) === S.bph-1 || L.phase==='ht';
-    const nb = L.phase==='pre' ? 0 : (L.phase==='ht' ? S.bph : cb+1);
-    const target = L.phase==='pre' ? null : L.phase==='ht' ? null : ((cb%S.bph)+1)*len - e;
-    let when;
-    if(L.phase==='pre') when = 'Starting five';
-    else if(L.phase==='ht') when = '2nd half starts with';
-    else if(isLast) when = (L.phase==='h1'?'Half time':'Full time')+` in <b>${fmt(target)}</b>`;
-    else when = `Next change in <b>${fmt(target)}</b>`;
-    nxt = `<div class="when">${when}</div>`;
-    if(L.phase==='pre' || L.phase==='ht'){
-      nxt += `<div class="chips">${(S.plan[nb]||[]).map(i=>chip(i, S.gk[nb<S.bph?0:1]===i?'gk':'on')).join('')}</div>`;
-    } else if(nb < nB()){
-      const nl = S.plan[nb] || [];
-      const off = lineup.filter(i=>!nl.includes(i)), inn = nl.filter(i=>!lineup.includes(i));
-      if(isLast) nxt += `<div class="hint">2nd half lineup: ${nl.map(i=>esc(nm(i))).join(', ')}</div>`;
-      else nxt += off.length ? `<div class="swap"><span class="k off">Off</span><span>${off.map(i=>esc(nm(i))).join(', ')}</span><span class="k in">On</span><span>${inn.map(i=>esc(nm(i))).join(', ')}</span></div>` : `<div class="hint">No change.</div>`;
-    }
-  }
-  setHTML('next', nxt);
-}
-
-function render(){
-  if(!S.plan || S.plan.length!==nB()) replan(0);
-  if(tab==='squad') renderSquad();
-  if(tab==='plan') renderPlan();
-  if(tab==='match') renderMatch();
-}
-const _h={};
-function setHTML(id,h){ if(_h[id]===h) return; _h[id]=h; document.getElementById(id).innerHTML=h }
-function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
+  save(); render();
+});
+document.getElementById('bph').addEventListener('change', e=>{ S.bph=+e.target.value; S.plan=null; replan(0); render() });
+[0,1].forEach(h=>document.getElementById('gk'+h).addEventListener('change', e=>{
+  S.gk[h]=+e.target.value; replan(started()?curBlock():0, started()); render();
+}));
+document.getElementById('planBox').addEventListener('toggle', e=>{ try{ localStorage.setItem(KEY+'-plan', e.target.open?'1':'') }catch(_){} });
 
 /* ---------- clock ---------- */
 function tick(){
-  const L = S.live;
+  const L=S.live;
   if(L.running){
-    const e = elapsed();
-    if(e >= HALF){
-      const h = L.phase==='h2'?1:0;
-      L.el[h] = HALF; L.running = false;
-      L.phase = h===0 ? 'ht' : 'ft';
-      save(); beep(); releaseWake();
+    if(elapsed()>=HALF){
+      const h=L.phase==='h2'?1:0;
+      L.el[h]=HALF; L.running=false; L.phase=h?'ft':'ht'; sel=null;
+      save(); beep(); releaseWake(); renderSettings();
     }
-    const cb = curBlock();
-    if(lastBlock!==null && cb!==lastBlock && L.running){ beep(); flashNext(); }
-    lastBlock = cb;
+    const cb=curBlock();
+    if(lastBlock!==null && cb!==lastBlock && L.running){ beep(); flashNext() }
+    lastBlock=cb;
   }
-  if(tab==='match') renderMatch();
-  if(tab==='plan' && S.live.running) renderPlan();
+  render();
 }
-function startTicking(){ if(!tickId) tickId = setInterval(tick, 250) }
 function flashNext(){ const n=document.getElementById('next'); n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash') }
 function beep(){
   try{
@@ -398,76 +413,11 @@ async function holdWake(){ try{ wake = await navigator.wakeLock.request('screen'
 function releaseWake(){ try{ wake && wake.release(); wake=null }catch(e){} }
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && S.live.running) holdWake() });
 
-/* ---------- events ---------- */
-document.querySelector('.tabs').addEventListener('click', e=>{ const b=e.target.closest('button'); if(b) setTab(b.dataset.tab) });
-
-document.getElementById('roster').addEventListener('input', e=>{
-  const i = e.target.dataset.i; if(i===undefined) return;
-  S.names[i] = e.target.value; save();
-  [0,1].forEach(h=>{ const o=document.querySelector(`#gk${h} option[value="${i}"]`); if(o) o.textContent = nm(+i) });
-});
-document.getElementById('roster').addEventListener('click', e=>{
-  const p = e.target.dataset.p; if(p===undefined) return;
-  togglePresent(+p); renderSquad();
-});
-document.getElementById('addPlayer').addEventListener('click', ()=>{
-  S.names.push('Player '+(S.names.length+1)); S.present.push(true);
-  replan(started()?curBlock():0); renderSquad();
-});
-document.getElementById('bph').addEventListener('change', e=>{ S.bph = +e.target.value; S.plan=null; replan(0); render() });
-[0,1].forEach(h=>document.getElementById('gk'+h).addEventListener('change', e=>{
-  S.gk[h] = +e.target.value; replan(started()?curBlock():0); render();
-}));
-
-function togglePresent(i){
-  S.present[i] = !S.present[i];
-  replan(started()?curBlock():0);
-}
-let sel = null;
-['onNow','benchNow'].forEach(id=>document.getElementById(id).addEventListener('click', e=>{
-  const b = e.target.closest('[data-t]'); if(!b) return;
-  const i = +b.dataset.t;
-  sel = sel===i ? null : i; renderMatch();
-}));
-document.getElementById('absentNow').addEventListener('click', e=>{
-  const b = e.target.closest('[data-t]'); if(!b) return;
-  togglePresent(+b.dataset.t); renderMatch();
-});
-document.getElementById('swapbox').addEventListener('click', e=>{
-  const x = e.target.closest('[data-x]')?.dataset.x;
-  const s = e.target.closest('[data-swap]');
-  if(x==='cancel'){ sel = null }
-  else if(x==='out'){ const i = sel; sel = null; togglePresent(i) }
-  else if(s){
-    const other = +s.dataset.swap, cb = curBlock(), lineup = S.plan[cb].slice();
-    const offP = lineup.includes(sel) ? sel : other, onP = offP===sel ? other : sel;
-    lineup[lineup.indexOf(offP)] = onP;
-    S.plan[cb] = lineup;
-    sel = null;
-    replan(cb+1, false);
-  }
-  renderMatch();
-});
-
-document.getElementById('ctrls').addEventListener('click', e=>{
-  const a = e.target.closest('[data-a]')?.dataset.a; if(!a) return;
-  const L = S.live;
-  if(a!=='reset') resetArmed = false;
-  if(a==='go'){ beep(); L.phase='h1'; L.el=[0,0]; L.running=true; L.t0=Date.now(); lastBlock=0; holdWake() }
-  if(a==='pause'){ const h=L.phase==='h2'?1:0; L.el[h]=elapsed(); L.running=false; releaseWake() }
-  if(a==='resume'){ L.running=true; L.t0=Date.now(); holdWake() }
-  if(a==='h2'){ beep(); L.phase='h2'; L.el[1]=0; L.running=true; L.t0=Date.now(); lastBlock=S.bph; holdWake() }
-  if(a==='reset'){
-    if(!resetArmed){ resetArmed = true; setTimeout(()=>{ resetArmed=false; renderMatch() }, 3000) }
-    else { resetArmed=false; S.live={phase:'pre',el:[0,0],running:false,t0:0}; S.present=S.present.map(()=>true); replan(0); releaseWake() }
-  }
-  save(); renderMatch();
-});
-
-try{ const t = localStorage.getItem(KEY+'-tab'); if(t) tab = t }catch(e){}
-if(S.live.running) holdWake();
-setTab(tab);
-startTicking();
+try{ if(localStorage.getItem(KEY+'-plan')) document.getElementById('planBox').open=true }catch(e){}
+if(S.live.running){ lastBlock=curBlock(); holdWake() }
+renderSettings();
+render();
+tickId = setInterval(tick, 250);
 </script>
 
 </body>
