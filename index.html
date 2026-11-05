@@ -108,6 +108,15 @@ table.grid{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabu
 .field label{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.alarm{position:fixed;inset:0;z-index:50;background:var(--bib);color:var(--bib-ink);display:flex;align-items:center;justify-content:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));animation:pulse 1.2s ease-in-out infinite}
+.alarm-in{width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px;text-align:center}
+.a-t{font:700 3.4rem/1 var(--display);text-transform:uppercase;letter-spacing:.02em}
+.a-b{font-size:1.25rem;display:flex;flex-direction:column;gap:8px}
+.a-r span{font:700 .95rem var(--display);letter-spacing:.08em;opacity:.8}
+.a-ok{font:700 1.2rem var(--body);padding:16px;border-radius:12px;border:0;background:var(--bib-ink);color:var(--bib);cursor:pointer}
+@keyframes pulse{50%{filter:brightness(1.12)}}
+@media (prefers-reduced-motion:reduce){.alarm{animation:none}}
 .flash{animation:flash 1s ease 3}
 @keyframes flash{50%{background:var(--bib);color:var(--bib-ink)}}
 @media (prefers-reduced-motion:reduce){.flash{animation:none}}
@@ -166,8 +175,18 @@ select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(-
         <div class="field"><label for="gk1">Keeper, 2nd half</label><select id="gk1"></select></div>
       </div>
       <p class="hint">"Rotates" means the keeper gets subbed like everyone else. Pick a name to keep one kid in goal for the whole half.</p>
+      <button class="btn alt" data-x="test">Test the sub alert sound</button>
+      <p class="hint">Keep the screen on and this page open during the game. Phones pause web pages when locked or in the background, so alerts can't sound then. iPhones don't allow websites to vibrate.</p>
     </div>
   </details>
+
+  <div class="alarm" id="alarm" hidden>
+    <div class="alarm-in">
+      <div class="a-t" id="alarmT"></div>
+      <div class="a-b" id="alarmB"></div>
+      <button class="a-ok" data-x="dismiss">Done</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -361,6 +380,8 @@ document.getElementById('app').addEventListener('click', e=>{
   const t=e.target.closest('[data-t]'); if(t) return tapPlayer(+t.dataset.t);
   const x=e.target.closest('[data-x]')?.dataset.x;
   if(x==='cancel'){ sel=null; return render() }
+  if(x==='dismiss'){ document.getElementById('alarm').hidden=true; return }
+  if(x==='test'){ beep(); return }
   if(x==='out' && sel!==null) return markOut(sel);
   const a=e.target.closest('[data-a]')?.dataset.a; if(!a) return;
   const L=S.live;
@@ -389,17 +410,67 @@ function tick(){
       const h=L.phase==='h2'?1:0;
       L.el[h]=HALF; L.running=false; L.phase=h?'ft':'ht'; sel=null;
       save(); beep(); releaseWake(); renderSettings();
+      alarm(h?'Full time':'Half time', h?'Game over. Good work, coach.':'Swap anyone you need on the pitch, then start the 2nd half.');
     }
     const cb=curBlock();
-    if(lastBlock!==null && cb!==lastBlock && L.running){ beep(); flashNext() }
+    if(lastBlock!==null && cb!==lastBlock && L.running){
+      beep(); flashNext();
+      const prev=S.plan[lastBlock], now=S.plan[cb], rows=[];
+      now.forEach((i,k)=>{ if(i!=null && !prev.includes(i)){ const out=prev[k]; rows.push(`<div class="a-r"><b>${esc(nm(i))}</b> on for <b>${out!=null&&!now.includes(out)?esc(nm(out)):'—'}</b> <span>${POS[k].k}</span></div>`) } });
+      alarm('Sub now', rows.join('') || 'No change this time.');
+    }
     lastBlock=cb;
   }
   render();
 }
 function flashNext(){ const n=document.getElementById('next'); n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash') }
+
+/* Sound: an <audio> element plays through the iPhone silent switch (Web Audio doesn't).
+   It has to be started once from a tap, after which the page can replay it on its own. */
+function makeWav(){
+  const rate=22050, dur=1.1, n=Math.floor(rate*dur), buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+  const w=(o,s)=>[...s].forEach((ch,k)=>v.setUint8(o+k,ch.charCodeAt(0)));
+  w(0,'RIFF'); v.setUint32(4,36+n*2,true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,rate,true); v.setUint32(28,rate*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true); w(36,'data'); v.setUint32(40,n*2,true);
+  for(let k=0;k<n;k++){
+    const t=k/rate, seg=t%0.37, on=t<1.1 && seg<0.25;
+    const env=on ? Math.min(1,seg/0.01,(0.25-seg)/0.02) : 0;
+    v.setInt16(44+k*2, Math.round(Math.sin(2*Math.PI*1250*t)*env*0.9*32767), true);
+  }
+  let bin=''; new Uint8Array(buf).forEach(b=>bin+=String.fromCharCode(b));
+  return 'data:audio/wav;base64,'+btoa(bin);
+}
+const snd = new Audio(makeWav()); snd.preload='auto';
+let sndReady=false;
+function unlockSound(){
+  if(sndReady) return;
+  try{
+    snd.muted=true;
+    const p=snd.play();
+    if(p && p.then) p.then(()=>{ if(snd.muted){ snd.pause(); snd.currentTime=0; snd.muted=false } sndReady=true }).catch(()=>{ snd.muted=false });
+  }catch(e){ snd.muted=false }
+  try{ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); ac.resume && ac.resume() }catch(e){}
+}
+document.addEventListener('pointerdown', unlockSound, {capture:true});
+
 function beep(){
+  try{ navigator.vibrate && navigator.vibrate([400,150,400,150,400]) }catch(e){}
+  try{
+    snd.muted=false; snd.currentTime=0;
+    const p=snd.play();
+    if(p && p.catch) p.catch(webBeep);
+  }catch(e){ webBeep() }
+}
+
+function alarm(title, body){
+  setHTML('alarmT', title); setHTML('alarmB', body);
+  document.getElementById('alarm').hidden=false;
+}
+
+function webBeep(){
   try{
     ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    ac.resume && ac.resume();
     [0,0.3].forEach(d=>{
       const o=ac.createOscillator(), g=ac.createGain(), t=ac.currentTime+d;
       o.frequency.value=1100; o.connect(g); g.connect(ac.destination);
@@ -407,7 +478,6 @@ function beep(){
       o.start(t); o.stop(t+0.25);
     });
   }catch(e){}
-  try{ navigator.vibrate && navigator.vibrate([200,100,200]) }catch(e){}
 }
 async function holdWake(){ try{ wake = await navigator.wakeLock.request('screen') }catch(e){} }
 function releaseWake(){ try{ wake && wake.release(); wake=null }catch(e){} }
